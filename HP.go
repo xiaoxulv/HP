@@ -75,7 +75,7 @@ func PaintFold(random string, hp string){
 	pic.SetStrokeColor(MakeColor(0, 0, 0))
 	x := 500.0
 	y := 500.0
-	pic.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
+	pic.gc.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
 	t := math.Pi/2
 	d := math.Pi/2
 	if hp[0] == 'H'{
@@ -95,11 +95,11 @@ func PaintFold(random string, hp string){
 		pic.LineTo(x, y)
 		pic.Stroke()
 		if hp[i+1] == 'H'{
-			pic.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
+			pic.gc.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
 			pic.Fill()
 			pic.MoveTo(x,y)
 		}else{//== "P"
-			pic.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
+			pic.gc.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
 			pic.Stroke()
 			pic.MoveTo(x,y)
 		}
@@ -195,7 +195,7 @@ func RandomFoldChange(str string) string {
 func OptimizeFold(hp string) string{
 	m := 100000//iteration times
 	T := 1.0//temperature
-	k := 0.997//parameter
+	k := 0.998//parameter
 	q := 0.0
 	p := 0.0
 	random := randomFold()
