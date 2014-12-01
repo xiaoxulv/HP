@@ -4,28 +4,72 @@ import(
 	"time"
 	"math"
 	"math/rand"
+	//"strings"
 	//"code.google.com/p/draw2d/draw2d"
 	//"os"
 	//"strconv"
 	//"errors"
 )
-func randomFold() []string {
+// return a random sequence string of l,r,f
+func randomFold() string {
 	var r int 
-	random := make([]string, 0)
+	var str string
 	for i := 0; i < 14; i++{
 		rand.Seed(time.Now().UnixNano())
 		r = rand.Intn(3)
 		if r == 0{
-			random = append(random,"l")
+			str += "l"
 		}else if r == 1{
-			random = append(random,"r")
+			str += "r"
 		}else{//r = 2
-			random = append(random,"f")
+			str += "f"
 		}
 	}
-	return random
+	return str
 }
-func drawFold(random string, hp string){
+// return the fold onto a suffcient large 2D matrix
+// start form (25,25), init "O" means not used
+// odd--points: H/P ; even--edges: E:edges used
+func DrawFold(random string, hp string) [][]string {
+	var m [][] string = make([][]string, 70)
+	for i := 0; i < 70; i++{
+		m[i] = make([]string, 70)
+	}
+	for i := 0; i < 70; i++{
+		for j := 0; j < 70; j++{
+			m[i][j] = "O"
+		}
+	}
+	x := 35
+	y := 35
+	t := math.Pi/2
+	d := math.Pi/2
+	if hp[0] == 'H'{
+		m[x][y] = "H"
+	}else{//'P'
+		m[x][y] = "P"
+	}
+	for i := 0; i <len(random); i++{
+		if random[i] == 'l'{
+			t +=d
+		}else if random[i] == 'r'{
+			t -=d
+		}
+		y += int(math.Cos(t))
+		x += -int(math.Sin(t))
+		m[x][y] = "E" //line
+		y += int(math.Cos(t))
+		x += -int(math.Sin(t)) 
+		if hp[i+1] == 'H'{
+			m[x][y] = "H"
+		}else{//'P'
+			m[x][y] = "P"
+		}
+	}
+ 	return m 
+}
+// draw the fold on a canvas and save to png
+func PaintFold(random string, hp string){
 	pic := CreateNewCanvas(1000, 1000)
 	pic.SetLineWidth(1)
 	pic.SetStrokeColor(MakeColor(0, 0, 0))
@@ -41,7 +85,6 @@ func drawFold(random string, hp string){
 	}
 	pic.MoveTo(x,y)
 	for i := 0; i < len(random); i++{
-		//fmt.Println()
 		if random[i] == 'l'{
 			t += d
 		}else if random[i] == 'r'{
@@ -51,7 +94,6 @@ func drawFold(random string, hp string){
 		y += -50*math.Sin(t)//be careful as coordinate-y in go is up to down
 		pic.LineTo(x, y)
 		pic.Stroke()
-		pic.MoveTo(x, y)
 		if hp[i+1] == 'H'{
 			pic.ArcTo(x, y, 5, 5, 0, 2*math.Pi)
 			pic.Fill()
@@ -62,19 +104,147 @@ func drawFold(random string, hp string){
 			pic.MoveTo(x,y)
 		}
 	}
-    
-    
-    //pic.FillStroke()
 	pic.SaveToPNG("HP.png")
-
 }
+// return energy(S,p) = 10x - \sum p*s,
+// x: time crossed, p = 1 if P, p = 0 if H
+// s: neighbour points in the walk and not adjacent
+func energy(random string, hp string) int{
+	m := DrawFold(random, hp)
+	count := 0
+	s := 0
+	for i := 2; i < len(m)-2; i++{
+		for j:= 2; j < len(m[0])-2; j++{
+			if m[i][j] == "H" || m[i][j] == "P" {
+				count++// count total num of points to calculate cross times
 
+				if m[i][j] == "H"{// 'P' is 0, no influence, only 'H' matters
+					// diagonal existence must result in s++
+					if m[i-2][j-2] == "H" || m[i-2][j-2]== "P"{
+						s++
+					}
+					if m[i-2][j+2] == "H" || m[i-2][j+2]== "P"{
+						s++
+					}
+					if m[i+2][j-2] == "H" || m[i+2][j-2]== "P"{
+						s++
+					}
+					if m[i+2][j+2] == "H" || m[i+2][j+2]== "P"{
+						s++
+					}
+					// not adjacent in the structure
+					// && precedent ||
+					if (m[i-2][j] == "H" || m[i-2][j]== "P") && m[i-1][j] == "O"{
+						s++
+					}
+					if (m[i][j-2] == "H" || m[i][j-2]== "P") && m[i][j-1] == "O"{
+						s++
+					}	
+					if (m[i][j+2] == "H" || m[i][j+2]== "P") && m[i][j+1] == "O"{
+						s++
+					}	
+					if (m[i+2][j] == "H" || m[i+2][j]== "P") && m[i+1][j] == "O"{
+						s++
+					}	
+					//fmt.Println("find a H")
+					//fmt.Println(s)															
+				}
+			}
+		}
+	}
+	x := 15 - count
+	energy := 10 * x - s
+	//fmt.Println(x)
+	//fmt.Println(energy)
+	return energy
+}
+//  Takes a fold and randomly changes one of its com- mands
+func RandomFoldChange(str string) string {
+	rand.Seed(time.Now().UnixNano())
+	r := rand.Intn(14)//index to change
+	s := rand.Intn(2)// two choices over change
+	// fmt.Println(r)
+	// fmt.Println(s)
+	// fmt.Println(str)
+	
+	if str[r] == 'l'{
+		if s == 0{
+			str = str[0:r] + "r" + str[r+1:]
+		}else {
+			str = str[0:r] + "f" + str[r+1:]
+		}
+	}
+	if str[r] == 'r'{
+		if s == 0{
+			str = str[0:r] + "l" + str[r+1:]
+		}else {
+			str = str[0:r] + "f" + str[r+1:]
+		}
+	}
+	if str[r] == 'f'{
+		if s == 0{
+			str = str[0:r] + "l" + str[r+1:]
+		}else {
+			str = str[0:r] + "r" + str[r+1:]
+		}
+	}
+	//fmt.Println(str)
+	return str
+}
+//
+func OptimizeFold(hp string) string{
+	m := 100000//iteration times
+	T := 1.0//temperature
+	k := 0.997//parameter
+	q := 0.0
+	p := 0.0
+	random := randomFold()
+	energyOri := energy(random, hp)
+	for i := 0; i < m; i++{
+		randChange := RandomFoldChange(random)
+		energyChange := energy(randChange, hp)
+		delta := energyChange - energyOri
+		if delta < 0{
+			random = randChange
+			energyOri = energyChange
+		}else{
+			q = math.Exp(-float64(delta)/(k*T))
+			fmt.Println(100*q)
+			rand.Seed(time.Now().UnixNano())
+			p = float64(rand.Intn(100))
+			if(p < 100*q){
+				random = randChange
+				energyOri = energyChange				
+			}
+		}
+		if i%100 == 0{
+			T = math.Max(1, 0.999*T)
+		}
+	} 
+	fmt.Println(energyOri)
+	return random
+}
 func main(){
-	//a := randomFold()
-	//fmt.Println(a)
+	//x := randomFold()
+	//fmt.Println(x)
 	a := "HHPHPHHPHHPPHHH"
 	b := "llrfrffrffrrfl"
-	//a := ["H","H","P","H","P","H","H","P","H","H","P","P","H","H","H"]
-	//b := ["l","l","r","f","r","f","f","r","f","f","r","r","f","l"]
-	drawFold(b,a)
+	
+	//PaintFold(x,a)
+	// m := DrawFold(b, a)
+	// for i := 0; i < len(m); i++{
+	// 	for j := 0; j < len(m[0]); j++{
+	// 		fmt.Print(m[i][j])
+	// 	}
+	// 	fmt.Println()
+	// }
+	//PaintFold(b,a)
+
+	
+	fmt.Println(energy(b,a))
+	//RandomFoldChange(x)
+	//fmt.Println("##########################")
+	s := OptimizeFold(a)
+	//fmt.Println(s)
+	PaintFold(s,a)
 }

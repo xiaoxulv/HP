@@ -87,6 +87,7 @@ func (c *Canvas) Clear() {
 func (c *Canvas) ClearRect(x1, y1, x2, y2 int) {
 	c.gc.ClearRect(x1, y1, x2, y2)
 }
+// Fill the given arc with the fill color
 func (c *Canvas) ArcTo(cx, cy, rx, ry, startAngle, angle float64){
 	c.gc.ArcTo(cx, cy, rx, ry, startAngle, angle)
 }
