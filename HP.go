@@ -11,10 +11,10 @@ import(
 	"errors"
 )
 // return a random sequence string of l,r,f
-func randomFold() string {
+func randomFold(length int) string {
 	var r int 
 	var str string
-	for i := 0; i < 14; i++{
+	for i := 0; i < length; i++{
 		rand.Seed(time.Now().UnixNano())
 		r = rand.Intn(3)
 		if r == 0{
@@ -109,15 +109,16 @@ func PaintFold(random string, hp string){
 // return energy(S,p) = 10x - \sum p*s,
 // x: time crossed, p = 1 if P, p = 0 if H
 // s: neighbour points in the walk and not adjacent
-func energy(random string, hp string) int{
+// if crossed structure, return true
+func energy(random string, hp string) (bool, int){
 	m := DrawFold(random, hp)
+	cross := false
 	count := 0
 	s := 0
 	for i := 2; i < len(m)-2; i++{
 		for j:= 2; j < len(m[0])-2; j++{
 			if m[i][j] == "H" || m[i][j] == "P" {
 				count++// count total num of points to calculate cross times
-
 				if m[i][j] == "H"{// 'P' is 0, no influence, only 'H' matters
 					// diagonal existence must result in s++
 					if m[i-2][j-2] == "H" || m[i-2][j-2]== "P"{
@@ -152,16 +153,19 @@ func energy(random string, hp string) int{
 			}
 		}
 	}
-	x := 15 - count
+	if count != 0{
+		cross = true
+	}
+	x := len(hp) - count
 	energy := 10 * x - s
 	//fmt.Println(x)
 	//fmt.Println(energy)
-	return energy
+	return cross, energy
 }
 //  Takes a fold and randomly changes one of its com- mands
 func RandomFoldChange(str string) string {
 	rand.Seed(time.Now().UnixNano())
-	r := rand.Intn(14)//index to change
+	r := rand.Intn(len(str))//index to change
 	s := rand.Intn(2)// two choices over change
 	// fmt.Println(r)
 	// fmt.Println(s)
@@ -200,28 +204,33 @@ func OptimizeFold(hp string) (string, int){
 	k := 0.998//parameter
 	q := 0.0
 	p := 0.0
-	random := randomFold()
-	energyOri := energy(random, hp)
+	random := randomFold(len(hp)-1)
+	_, energyOri := energy(random, hp)
 	for i := 0; i < m; i++{
 		randChange := RandomFoldChange(random)
-		energyChange := energy(randChange, hp)
-		delta := energyChange - energyOri
-		if delta < 0{
-			random = randChange
-			energyOri = energyChange
-		}else{
-			q = math.Exp(-float64(delta)/(k*T))
-			//fmt.Println(100*q)
-			rand.Seed(time.Now().UnixNano())
-			p = float64(rand.Intn(100))
-			if(p < 100*q){
+		cross, energyChange := energy(randChange, hp)
+		if cross {// reject the crossed ones
+			continue
+		} else {
+			delta := energyChange - energyOri
+			if delta < 0{
 				random = randChange
-				energyOri = energyChange				
+				energyOri = energyChange
+			}else{
+				q = math.Exp(-float64(delta)/(k*T))
+				//fmt.Println(100*q)
+				rand.Seed(time.Now().UnixNano())
+				p = float64(rand.Intn(100))
+				if(p < 100*q){
+					random = randChange
+					energyOri = energyChange				
+				}
+			}
+			if i%100 == 0{
+				T = 0.999*T// run faster
 			}
 		}
-		if i%100 == 0{
-			T = 0.999*T
-		}
+		
 	} 
 	//fmt.Println(energyOri)
 	return random, energyOri
