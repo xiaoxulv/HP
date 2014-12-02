@@ -6,9 +6,9 @@ import(
 	"math/rand"
 	//"strings"
 	//"code.google.com/p/draw2d/draw2d"
-	//"os"
+	"os"
 	//"strconv"
-	//"errors"
+	"errors"
 )
 // return a random sequence string of l,r,f
 func randomFold() string {
@@ -49,7 +49,7 @@ func DrawFold(random string, hp string) [][]string {
 	}else{//'P'
 		m[x][y] = "P"
 	}
-	for i := 0; i <len(random); i++{
+	for i := 0; i < len(random); i++{
 		if random[i] == 'l'{
 			t +=d
 		}else if random[i] == 'r'{
@@ -104,7 +104,7 @@ func PaintFold(random string, hp string){
 			pic.MoveTo(x,y)
 		}
 	}
-	pic.SaveToPNG("HP.png")
+	pic.SaveToPNG("fold.png")
 }
 // return energy(S,p) = 10x - \sum p*s,
 // x: time crossed, p = 1 if P, p = 0 if H
@@ -191,8 +191,10 @@ func RandomFoldChange(str string) string {
 	//fmt.Println(str)
 	return str
 }
-//
-func OptimizeFold(hp string) string{
+// use simulate anneal to find local optimal enery fold structure
+// lower energy results in fold change a command and higher energy 
+// results in fold change with a probabilty (math.e(-delta/kT))
+func OptimizeFold(hp string) (string, int){
 	m := 100000//iteration times
 	T := 1.0//temperature
 	k := 0.998//parameter
@@ -209,7 +211,7 @@ func OptimizeFold(hp string) string{
 			energyOri = energyChange
 		}else{
 			q = math.Exp(-float64(delta)/(k*T))
-			fmt.Println(100*q)
+			//fmt.Println(100*q)
 			rand.Seed(time.Now().UnixNano())
 			p = float64(rand.Intn(100))
 			if(p < 100*q){
@@ -218,17 +220,17 @@ func OptimizeFold(hp string) string{
 			}
 		}
 		if i%100 == 0{
-			T = math.Max(1, 0.999*T)
+			T = 0.999*T
 		}
 	} 
-	fmt.Println(energyOri)
-	return random
+	//fmt.Println(energyOri)
+	return random, energyOri
 }
 func main(){
 	//x := randomFold()
 	//fmt.Println(x)
-	a := "HHPHPHHPHHPPHHH"
-	b := "llrfrffrffrrfl"
+	//a := "HHPHPHHPHHPPHHH"
+	//b := "llrfrffrffrrfl"
 	
 	//PaintFold(x,a)
 	// m := DrawFold(b, a)
@@ -241,10 +243,21 @@ func main(){
 	//PaintFold(b,a)
 
 	
-	fmt.Println(energy(b,a))
+	//fmt.Println(energy(b,a))
 	//RandomFoldChange(x)
 	//fmt.Println("##########################")
-	s := OptimizeFold(a)
+	//s := OptimizeFold(a)
 	//fmt.Println(s)
-	PaintFold(s,a)
+	//PaintFold(s,a)
+	if(len(os.Args) != 2){
+        err := errors.New("Error: sorry, number of your input is not OK")
+        fmt.Println(err)
+        return
+    }
+    hp := os.Args[1]
+    opt, ener := OptimizeFold(hp)
+    PaintFold(opt, hp)
+    fmt.Println("Energy: " ,ener)
+    fmt.Println("Structure: " ,opt)
+
 }
