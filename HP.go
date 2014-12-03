@@ -118,7 +118,7 @@ func energy(random string, hp string) (bool, int){
 	for i := 2; i < len(m)-2; i++{
 		for j:= 2; j < len(m[0])-2; j++{
 			if m[i][j] == "H" || m[i][j] == "P" {
-				count++// count total num of points to calculate cross times
+				count++// count total num of points exists
 				if m[i][j] == "H"{// 'P' is 0, no influence, only 'H' matters
 					// diagonal existence must result in s++
 					if m[i-2][j-2] == "H" || m[i-2][j-2]== "P"{
@@ -146,20 +146,16 @@ func energy(random string, hp string) (bool, int){
 					}	
 					if (m[i+2][j] == "H" || m[i+2][j]== "P") && m[i+1][j] == "O"{
 						s++
-					}	
-					//fmt.Println("find a H")
-					//fmt.Println(s)															
+					}																
 				}
 			}
 		}
 	}
-	if count != 0{
+	x := len(hp) - count// num of cross occurence
+	if x != 0{
 		cross = true
 	}
-	x := len(hp) - count
 	energy := 10 * x - s
-	//fmt.Println(x)
-	//fmt.Println(energy)
 	return cross, energy
 }
 //  Takes a fold and randomly changes one of its com- mands
@@ -167,10 +163,6 @@ func RandomFoldChange(str string) string {
 	rand.Seed(time.Now().UnixNano())
 	r := rand.Intn(len(str))//index to change
 	s := rand.Intn(2)// two choices over change
-	// fmt.Println(r)
-	// fmt.Println(s)
-	// fmt.Println(str)
-	
 	if str[r] == 'l'{
 		if s == 0{
 			str = str[0:r] + "r" + str[r+1:]
@@ -192,7 +184,6 @@ func RandomFoldChange(str string) string {
 			str = str[0:r] + "r" + str[r+1:]
 		}
 	}
-	//fmt.Println(str)
 	return str
 }
 // use simulate anneal to find local optimal enery fold structure
@@ -204,8 +195,16 @@ func OptimizeFold(hp string) (string, int){
 	k := 0.998//parameter
 	q := 0.0
 	p := 0.0
-	random := randomFold(len(hp)-1)
-	_, energyOri := energy(random, hp)
+	flag := true
+
+	var random string
+	var energyOri int
+	var b bool
+	for flag{// random get first fold, reject crossed ones
+		random = randomFold(len(hp)-1)
+		b, energyOri = energy(random, hp)
+		flag = b
+	}
 	for i := 0; i < m; i++{
 		randChange := RandomFoldChange(random)
 		cross, energyChange := energy(randChange, hp)
@@ -218,7 +217,6 @@ func OptimizeFold(hp string) (string, int){
 				energyOri = energyChange
 			}else{
 				q = math.Exp(-float64(delta)/(k*T))
-				//fmt.Println(100*q)
 				rand.Seed(time.Now().UnixNano())
 				p = float64(rand.Intn(100))
 				if(p < 100*q){
@@ -232,15 +230,15 @@ func OptimizeFold(hp string) (string, int){
 		}
 		
 	} 
-	//fmt.Println(energyOri)
+
 	return random, energyOri
 }
 func main(){
+	/* single function testing */
 	//x := randomFold()
 	//fmt.Println(x)
 	//a := "HHPHPHHPHHPPHHH"
 	//b := "llrfrffrffrrfl"
-	
 	//PaintFold(x,a)
 	// m := DrawFold(b, a)
 	// for i := 0; i < len(m); i++{
@@ -250,14 +248,13 @@ func main(){
 	// 	fmt.Println()
 	// }
 	//PaintFold(b,a)
-
-	
 	//fmt.Println(energy(b,a))
 	//RandomFoldChange(x)
 	//fmt.Println("##########################")
 	//s := OptimizeFold(a)
 	//fmt.Println(s)
 	//PaintFold(s,a)
+
 	if(len(os.Args) != 2){
         err := errors.New("Error: sorry, number of your input is not OK")
         fmt.Println(err)
