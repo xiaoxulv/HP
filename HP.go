@@ -191,8 +191,8 @@ func RandomFoldChange(str string) string {
 // results in fold change with a probabilty (math.e(-delta/kT))
 func OptimizeFold(hp string) (string, int){
 	l := 100000//iteration times
-	T := 10*len(hp)//temperature
-	k := 6*len(hp)//parameter
+	T := float64(10*len(hp))//temperature
+	k := float64(6*len(hp))//parameter
 	m := 10*len(hp)//the structure hasn’t changed for m iterations, stop
 	q := 0.0
 	p := 0.0
@@ -222,8 +222,8 @@ func OptimizeFold(hp string) (string, int){
 			}else{
 				q = math.Exp(-float64(delta)/(k*T))
 				rand.Seed(time.Now().UnixNano())
-				p = float64(rand.Intn(100))
-				if(p < 100*q){
+				p = rand.Float64()
+				if(p < q){
 					random = randChange
 					energyOri = energyChange	
 					count++			
