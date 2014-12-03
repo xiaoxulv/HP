@@ -208,7 +208,7 @@ func OptimizeFold(hp string) (string, int){
 		b, energyOri = energy(random, hp)
 		flag = b
 	}
-	for i := 0; i < l || count < m; i++{
+	for i := 0; i < l && count < m; i++{
 		randChange := RandomFoldChange(random)
 		cross, energyChange := energy(randChange, hp)
 		if cross {// reject the crossed ones
@@ -218,7 +218,7 @@ func OptimizeFold(hp string) (string, int){
 			if delta < 0{
 				random = randChange
 				energyOri = energyChange
-				count++
+				count = 0
 			}else{
 				q = math.Exp(-float64(delta)/(k*T))
 				rand.Seed(time.Now().UnixNano())
@@ -226,16 +226,17 @@ func OptimizeFold(hp string) (string, int){
 				if(p < q){
 					random = randChange
 					energyOri = energyChange	
-					count++			
+					count = 0		
+				}else{
+					count++					
 				}
+
 			}
 			if i%100 == 0{
 				T = 0.999*T// run faster
 			}
 		}
-		
 	} 
-
 	return random, energyOri
 }
 func main(){
